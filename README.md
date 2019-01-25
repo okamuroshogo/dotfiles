@@ -1,4 +1,7 @@
 # okamu dotfiles
+
+https://github.com/okamuroshogo/dotfiles-light
+
 ## installaton
 ### Dotfiles
 ```
