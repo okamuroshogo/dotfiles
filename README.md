@@ -1,6 +1,6 @@
 # okamu dotfiles
 
-https://github.com/okamuroshogo/dotfiles-light
+https://github.com/okamuroshogo/dotfiles
 
 ## installaton
 ### Dotfiles
@@ -15,16 +15,15 @@ homesick clone okamuroshogo/dotfiles
 homesick symlink dotfiles
 ```
 
-### Install Homebrew
-```
-cd ~/.homesick/repos/dotfiles/
-./.brew_install
-```
-
 ### Install anyenv environment
 ```
 cd ~/.homesick/repos/dotfiles/
 ./.anyenv_install
+```
+### Install latest env
+```
+cd ~/.homesick/repos/dotfiles/
+./.latest_env_install
 ```
 
 ### Setup osx
@@ -33,8 +32,8 @@ cd ~/.homesick/repos/dotfiles/
 ./.osx
 ```
 
-### Install latest env
+### Install Homebrew
 ```
 cd ~/.homesick/repos/dotfiles/
-./.latest_env_install
+./.brew_install
 ```
