@@ -37,3 +37,8 @@ cd ~/.homesick/repos/dotfiles/
 cd ~/.homesick/repos/dotfiles/
 ./.brew_install
 ```
+
+### etc
+```
+chsh -s /bin/zsh
+```
