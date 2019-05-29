@@ -3,3 +3,6 @@
 home/.config/dein/dein
 node_modules/
 
+home/.config/gcloud/
+home/.config/configstore/
+home/.config/karabiner/

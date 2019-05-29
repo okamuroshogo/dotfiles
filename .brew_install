@@ -75,6 +75,7 @@ casks=(
     imageoptim
     iterm2
     java
+    krisp
     genymotion
     karabiner
     minikube
