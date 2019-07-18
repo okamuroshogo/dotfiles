@@ -2,11 +2,11 @@
 
 echo "installing anyenv environments"
 
-anyenv install goenv --skip-existing
-anyenv install ndenv --skip-existing
-anyenv install nenv --skip-existing
-anyenv install pyenv --skip-existing
-anyenv install rbenv --skip-existing
+~/.anyenv/bin/anyenv install goenv --skip-existing
+~/.anyenv/bin/anyenv install ndenv --skip-existing
+~/.anyenv/bin/anyenv install nenv --skip-existing
+~/.anyenv/bin/anyenv install pyenv --skip-existing
+~/.anyenv/bin/anyenv install rbenv --skip-existing
 
 cat << END
 **************************************************

@@ -34,7 +34,6 @@ formulas=(
     openssl@1.1
     pcre
     pkg-config
-    python3
     readline
     redis
     scons
@@ -58,7 +57,6 @@ for formula in "${formulas[@]}"; do
 done
 
 casks=(
-    adobe-creative-cloud
     aerial
     android-file-transfer
     android-platform-tools
@@ -66,8 +64,6 @@ casks=(
     android-sdk
     android-studio
     appcleaner
-    atom
-    cyberduck
     docker
     firefox
     google-chrome
@@ -75,21 +71,11 @@ casks=(
     imageoptim
     iterm2
     java
-    krisp
-    genymotion
     karabiner
-    minikube
-    mongohub
     mysqlworkbench
     sequel-pro
-    sketch
-    sketch-toolbox
-    skype
     slack
-    sublime-text
-    thunderbird
-    unity
-    vagrant
+    station
 )
 
 echo "start brew cask install apps..."
