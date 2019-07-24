@@ -19,6 +19,7 @@ formulas=(
     awscli
     carthage
     Caskroom/cask/xquartz
+    ffmpeg
     go
     imagemagick
     jq
