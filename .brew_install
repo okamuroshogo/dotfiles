@@ -65,6 +65,7 @@ casks=(
     android-sdk
     android-studio
     appcleaner
+    charles
     docker
     firefox
     google-chrome
