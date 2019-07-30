@@ -27,3 +27,6 @@
 [color]
   diff = always
   diff-highlight = always
+
+[pager]
+    diff = git diff | less -RS
