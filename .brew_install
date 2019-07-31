@@ -39,6 +39,7 @@ formulas=(
     redis
     scons
     sqlite
+    tig
     tmux
     wget
     yarn
