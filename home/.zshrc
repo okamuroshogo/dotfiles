@@ -293,7 +293,8 @@ fi
 export PATH="/usr/local/opt/imagemagick@6/bin:$PATH"
 
 export PATH="$HOME/.fastlane/bin:$PATH"
-export PATH="/usr/local/Cellar/git/2.14.1/bin:$PATH"
+export PATH="/usr/local/git/bin:$PATH"
+
 
 
 
@@ -306,3 +307,5 @@ export PATH="/usr/local/Cellar/git/2.14.1/bin:$PATH"
 
 export PATH="$HOME/.yarn/bin:$PATH"
 export PATH="$PATH:`yarn global bin`"
+
+export PATH="$HOME/development/flutter/bin:$PATH"

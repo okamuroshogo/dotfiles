@@ -1,1 +1,1 @@
-/Users/okamu/.vimrc
+/Users/shogo.okamuro/.vimrc
