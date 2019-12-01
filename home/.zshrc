@@ -308,4 +308,9 @@ export PATH="/usr/local/git/bin:$PATH"
 export PATH="$HOME/.yarn/bin:$PATH"
 export PATH="$PATH:`yarn global bin`"
 
+## flutter
 export PATH="$HOME/development/flutter/bin:$PATH"
+
+# tabtab source for slss package
+# uninstall by removing these lines or running `tabtab uninstall slss`
+[[ -f /Users/okamu/ServerProject/okamu.ro/WashingButton/node_modules/tabtab/.completions/slss.zsh ]] && . /Users/okamu/ServerProject/okamu.ro/WashingButton/node_modules/tabtab/.completions/slss.zsh

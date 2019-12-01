@@ -68,6 +68,7 @@ casks=(
     appcleaner
     charles
     docker
+    figma
     firefox
     google-chrome
     hyperswitch
