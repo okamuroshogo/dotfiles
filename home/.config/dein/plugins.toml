@@ -38,3 +38,18 @@ repo = 'itchyny/lightline.vim'
 [[plugins]]
 repo = 'Shougo/neocomplcache.vim'
 
+[[plugins]]
+repo = 'dart-lang/dart-vim-plugin'
+
+[[plugins]]
+repo = 'thosakwe/vim-flutter'
+
+[[plugins]]
+repo = 'landaire/deoplete-swift'
+
+[[plugins]]
+repo = 'kballard/vim-swift'
+
+[[plugins]]
+repo = 'keith/swift.vim'
+

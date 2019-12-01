@@ -1,7 +1,9 @@
 # This is Git's per-user configuration file.
 [user]
-  name = okamu
-  email = shogo@okamu.ro
+  name = okamuro shogo
+  email = shogo.okamuro@medpeer.co.jp
+#  email = shogo@okamu.ro
+
 
 [alias]
   graph =  !git log --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative | less -R
@@ -27,3 +29,6 @@
 [color]
   diff = always
   diff-highlight = always
+
+[pager]
+    diff = git diff | less -RS
