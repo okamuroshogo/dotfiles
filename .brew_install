@@ -80,6 +80,7 @@ casks=(
     sequel-pro
     slack
     station
+    visual-studio-code
 )
 
 echo "start brew cask install apps..."

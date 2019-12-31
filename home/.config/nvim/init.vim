@@ -1,1 +1,1 @@
-/Users/shogo.okamuro/.vimrc
+/Users/okamu-13/.homesick/repos/dotfiles/home/.vimrc

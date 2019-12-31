@@ -41,6 +41,6 @@ cd ~/.homesick/repos/dotfiles/
 ### etc
 ```
 chsh -s /bin/zsh
-ln -nfs ~/.homesick/repos/dotfiles-light/home/.vim .vim
-ln -nfs ~/.homesick/repos/dotfiles-light/home/.vimrc init.vim
+ln -nfs ~/.homesick/repos/dotfiles/home/.vim .vim
+ln -nfs ~/.homesick/repos/dotfiles/home/.vimrc init.vim
 ```
