@@ -1,8 +1,7 @@
 # This is Git's per-user configuration file.
 [user]
   name = okamuro shogo
-  email = shogo.okamuro@medpeer.co.jp
-#  email = shogo@okamu.ro
+  email = shogo@okamu.ro
 
 
 [alias]
