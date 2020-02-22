@@ -2,14 +2,18 @@ export CFLAGS="-I$(brew --prefix openssl)/include"
 
 goenv install $(goenv install --list | grep -v - | head -2 | tail -1) -s
 goenv global $(goenv install --list | grep -v - | head -2 | tail -1)
+goenb rehash
 
 nodenv install $(nodenv install -l | grep -v - | tail -1) -s
 nodenv global $(nodenv install -l | grep -v - | tail -1)
+nodenv rehash
 
 CFLAGS="-I$(brew --prefix openssl)/include" \
 LDFLAGS="-L$(brew --prefix openssl)/lib" \
 pyenv install $(pyenv install -l | grep -v - | tail -1) -s
 pyenv global $(pyenv install -l | grep -v - | tail -1)
+pyenv rehash
 
 rbenv install $(rbenv install -l | grep -v - | tail -1) -s
 rbenv global $(rbenv install -l | grep -v - | tail -1)
+rbenv rehash

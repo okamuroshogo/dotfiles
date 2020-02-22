@@ -36,6 +36,7 @@ formulas=(
     pcre
     pkg-config
     readline
+    reattach-to-user-namespace
     redis
     scons
     sqlite
