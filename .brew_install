@@ -24,6 +24,7 @@ formulas=(
     imagemagick
     jq
     makedepend
+    mint
     mongodb
     mysql
     nginx
