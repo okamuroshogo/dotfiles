@@ -79,6 +79,7 @@ casks=(
     java
     karabiner
     mysqlworkbench
+    realm-studio
     sequel-pro
     slack
     station
