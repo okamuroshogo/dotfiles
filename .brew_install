@@ -24,6 +24,7 @@ formulas=(
     imagemagick
     jq
     makedepend
+    mint
     mongodb
     mysql
     nginx
@@ -36,6 +37,7 @@ formulas=(
     pcre
     pkg-config
     readline
+    reattach-to-user-namespace
     redis
     scons
     sqlite
@@ -77,9 +79,11 @@ casks=(
     java
     karabiner
     mysqlworkbench
+    realm-studio
     sequel-pro
     slack
     station
+    visual-studio-code
 )
 
 echo "start brew cask install apps..."
