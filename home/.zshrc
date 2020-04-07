@@ -309,7 +309,7 @@ export PATH="$HOME/.yarn/bin:$PATH"
 export PATH="$PATH:`yarn global bin`"
 
 ## flutter
-export PATH="$HOME/development/Flutter/flutter/bin:$PATH"
+export PATH="$PATH:`pwd`/flutter/bin"
 
 # tabtab source for slss package
 # uninstall by removing these lines or running `tabtab uninstall slss`

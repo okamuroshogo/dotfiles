@@ -15,6 +15,7 @@
   co = checkout
   df = !git diff --color-words | less -RS
   br = branch
+  ignore-cache = !git rm -r --cached . && git add .
 
 [diff]
   color = true
