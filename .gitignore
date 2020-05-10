@@ -6,3 +6,5 @@ node_modules/
 home/.config/gcloud/
 home/.config/configstore/
 home/.config/karabiner/
+
+.netrwhist
