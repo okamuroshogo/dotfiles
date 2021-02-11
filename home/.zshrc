@@ -1,3 +1,5 @@
+#tmuxで困ったらtmux kill-server
+#
 # anyenv
 if [ -d ${HOME}/.anyenv ] ; then
   export PATH="$HOME/.anyenv/bin:$PATH"
@@ -321,4 +323,4 @@ export PATH=$PATH:`npm bin -g`
 export PATH="/usr/local/opt/php@7.3/bin:$PATH"
 export PATH="/usr/local/opt/php@7.3/sbin:$PATH"
 export PATH="$HOME/.config/composer/vendor/bin:$PATH"
-
+export PATH=$PATH:./node_modules/.bin
