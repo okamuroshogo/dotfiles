@@ -2,7 +2,7 @@ export CFLAGS="-I$(brew --prefix openssl)/include"
 
 goenv install $(goenv install --list | grep -v - | head -2 | tail -1) -s
 goenv global $(goenv install --list | grep -v - | head -2 | tail -1)
-goenb rehash
+goenv rehash
 
 nodenv install $(nodenv install -l | grep -v - | tail -1) -s
 nodenv global $(nodenv install -l | grep -v - | tail -1)
