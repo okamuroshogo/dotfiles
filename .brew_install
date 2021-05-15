@@ -61,6 +61,7 @@ for formula in "${formulas[@]}"; do
 done
 
 casks=(
+    1password
     aerial
     android-file-transfer
     android-platform-tools
@@ -69,6 +70,7 @@ casks=(
     android-studio
     appcleaner
     charles
+    clipy
     docker
     figma
     firefox
