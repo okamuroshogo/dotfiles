@@ -11,8 +11,6 @@ if [ -d ${HOME}/.anyenv ] ; then
   done
 fi
 
-#}}}
-# {{{ Zplug Setting
 if [ ! -f $HOME/.zplug/init.zsh ]; then
   curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh| zsh
 fi
