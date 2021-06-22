@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "installing homebrew..."
-which brew >/dev/null 2>&1 || /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+which brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 echo "run brew doctor..."
 which brew >/dev/null 2>&1 && brew doctor
@@ -11,7 +11,7 @@ which brew >/dev/null 2>&1 && brew update
 
 echo "ok. run brew upgrade..."
 
-brew upgrade --all
+brew upgrade 
 
 formulas=(
     ag
@@ -25,7 +25,6 @@ formulas=(
     jq
     makedepend
     mint
-    mongodb
     mysql
     nginx
     nkf
@@ -48,12 +47,6 @@ formulas=(
     zsh
 )
 
-"brew tap..."
-brew tap homebrew/dupes
-brew tap homebrew/versions
-brew tap homebrew/homebrew-php
-brew tap homebrew/apache
-brew tap sanemat/font
 
 echo "start brew install apps..."
 for formula in "${formulas[@]}"; do
@@ -94,7 +87,6 @@ for cask in "${casks[@]}"; do
 done
 
 brew cleanup
-brew cleanup --cask
 
 cat << END
 

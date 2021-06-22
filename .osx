@@ -18,3 +18,9 @@ defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
 # 保存ダイアログを常に展開状態にする
 defaults write -g NSNavPanelExpandedStateForSaveMode -bool yes
+
+# font 入れる
+curl -LO https://github.com/adobe-fonts/source-code-pro/archive/release.zip
+unzip release.zip
+cp -a source-code-pro-release/TTF/* ~/Library/Fonts
+
