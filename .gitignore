@@ -12,3 +12,7 @@ home/.config/Yamaha/
 
 home/.config/firebase
 home/.config/iterm2
+
+home/.config/custom_devices.json
+home/.config/flutter/
+home/.config/rstudio/

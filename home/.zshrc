@@ -325,3 +325,9 @@ export PATH=$PATH:./node_modules/.bin
 
 export GOPATH=$HOME/go
 export PATH=$GOPATH/bin:$PATH
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/okamu/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/okamu/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/okamu/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/okamu/google-cloud-sdk/completion.zsh.inc'; fi
