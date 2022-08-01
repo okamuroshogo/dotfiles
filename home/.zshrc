@@ -16,6 +16,15 @@ if [ ! -f $HOME/.zplug/init.zsh ]; then
 fi
 source ~/.zplug/init.zsh
 
+ARCH=$(uname -m)
+if [[ $ARCH == arm64 ]]; then
+    echo -e "\x1B[32m Current Architecture: $ARCH \x1B[0m"
+	eval $(/opt/homebrew/bin/brew shellenv)
+elif [[ $ARCH == x86_64 ]]; then
+    echo -e "\x1B[01;91m Current Architecture: $ARCH \x1B[0m"
+	eval $(/usr/local/bin/brew shellenv)
+fi
+
 zplug "mafredri/zsh-async", from:github
 zplug "chrissicool/zsh-256color"
 zplug "b4b4r07/enhancd", use:init.sh
@@ -110,9 +119,6 @@ setopt hist_reduce_blanks
 # キーバインディングをemacs風に(-vはvim)
 bindkey -e
 # bindkey -v
- 
-# zsh-completionsの設定
-fpath=(/path/to/homebrew/share/zsh-completions $fpath)
  
 autoload -U compinit
 compinit -u

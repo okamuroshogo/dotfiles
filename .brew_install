@@ -82,8 +82,10 @@ casks=(
     karabiner
     mysqlworkbench
     realm-studio
-    sequel-pro
+    sequel-ace
+    sidekick
     slack
+    spotify
     station
     visual-studio-code
 )
