@@ -71,6 +71,7 @@ casks=(
     appcleaner
     charles
     clipy
+    discord
     docker
     figma
     firefox
@@ -80,6 +81,8 @@ casks=(
     iterm2
     java
     karabiner
+    messenger
+    microsoft-teams
     mysqlworkbench
     realm-studio
     sequel-ace
@@ -87,6 +90,7 @@ casks=(
     slack
     spotify
     station
+    telegram
     visual-studio-code
 )
 
