@@ -1,0 +1,23 @@
+# どのリポジトリでも無視したいもの。
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows (共有リポジトリで混ざることがある)
+Thumbs.db
+Desktop.ini
+
+# エディタ
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# 環境依存
+.direnv/

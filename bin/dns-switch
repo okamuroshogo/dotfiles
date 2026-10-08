@@ -1,0 +1,161 @@
+#!/bin/bash
+#
+# dns-switch — 接続中の Wi-Fi が自宅の SSID なら DNS を固定し、
+#              それ以外(別のWi-Fi / 未接続)なら自動取得(DHCP)に戻す。
+#
+# 使い方:
+#   dns-switch              判定して必要なら適用する (launchd から呼ばれる)
+#   dns-switch --status     現在の状態を表示するだけ
+#   dns-switch --dry-run    何をするか表示するだけ
+#
+# 設定は /usr/local/etc/dns-switch.conf (リポジトリの config/dns-switch/ が元)。
+#
+# 設計メモ:
+#   - 「望む状態」と「今の状態」を比べて、違うときだけ networksetup を叩く。
+#     launchd の WatchPaths が resolv.conf を見ているので、
+#     毎回無条件に書き換えると自分の変更で自分が再起動する無限ループになる。
+#   - DNS の変更には root が必要なので LaunchDaemon (root) として動かす。
+
+set -uo pipefail
+
+CONF="${DNS_SWITCH_CONF:-/usr/local/etc/dns-switch.conf}"
+HOME_SSID=""
+HOME_DNS=""
+
+# shellcheck source=/dev/null
+[[ -r "$CONF" ]] && . "$CONF"
+
+MODE="apply"
+case "${1:-}" in
+  --status)  MODE="status" ;;
+  --dry-run) MODE="dry-run" ;;
+  -h|--help) sed -n '3,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  "")        ;;
+  *)         echo "不明なオプション: $1" >&2; exit 2 ;;
+esac
+
+say() { printf '%s dns-switch: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
+
+# Wi-Fi のインターフェース名 (en0 など)。機種によって変わるので毎回引く。
+wifi_device() {
+  /usr/sbin/networksetup -listallhardwareports 2>/dev/null \
+    | awk '/^Hardware Port: Wi-Fi$/ { getline; print $2; exit }'
+}
+
+# インターフェースに対応するネットワークサービス名 ("Wi-Fi" など)。
+# networksetup はサービス名で指定するのでデバイス名から引き直す。
+wifi_service() {
+  local dev="$1"
+  /usr/sbin/networksetup -listnetworkserviceorder 2>/dev/null \
+    | awk -v dev="$dev" '
+        /^\(/ && !/Hardware Port:/ { svc = $0; sub(/^\([^)]*\) /, "", svc); next }
+        $0 ~ ("Device: " dev "\\)")  { print svc; exit }
+      '
+}
+
+# 接続中の SSID。未接続なら空文字。
+#
+# 注意: macOS 14 以降 `networksetup -getairportnetwork` は位置情報の許可が無いと
+#       接続中でも "You are not associated with an AirPort network." と答える。
+#       そのため ipconfig を主、networksetup を従にしている。
+#       さらに ipconfig は切断直後に古い SSID を返すことがあるので、
+#       先にインターフェースが active かどうかを見る。
+current_ssid() {
+  local dev="$1" ssid=""
+
+  /sbin/ifconfig "$dev" 2>/dev/null | grep -q 'status: active' || {
+    printf ''
+    return 0
+  }
+
+  ssid="$(/usr/sbin/ipconfig getsummary "$dev" 2>/dev/null \
+    | sed -n 's/^[[:space:]]*SSID[[:space:]]*:[[:space:]]*//p' | head -1)"
+
+  if [[ -z "$ssid" ]]; then
+    ssid="$(/usr/sbin/networksetup -getairportnetwork "$dev" 2>/dev/null \
+      | sed -n 's/^Current Wi-Fi Network: //p')"
+  fi
+
+  printf '%s' "$ssid"
+}
+
+# 現在設定されている DNS をスペース区切りで。手動設定なしなら空文字。
+current_dns() {
+  local svc="$1" out
+  out="$(/usr/sbin/networksetup -getdnsservers "$svc" 2>/dev/null)" || return 1
+  case "$out" in
+    *"aren't any DNS Servers"*|*"DNS Servers set"*) printf '' ;;
+    *) printf '%s' "$(printf '%s' "$out" | tr '\n' ' ' | sed 's/[[:space:]]*$//')" ;;
+  esac
+}
+
+main() {
+  local dev svc ssid desired current
+
+  dev="$(wifi_device)"
+  if [[ -z "$dev" ]]; then
+    [[ "$MODE" == "apply" ]] || say "Wi-Fi インターフェースが見つかりません"
+    return 0
+  fi
+
+  svc="$(wifi_service "$dev")"
+  if [[ -z "$svc" ]]; then
+    say "$dev に対応するネットワークサービスが見つかりません"
+    return 0
+  fi
+
+  ssid="$(current_ssid "$dev")"
+
+  if [[ -n "$HOME_SSID" && "$ssid" == "$HOME_SSID" ]]; then
+    desired="$HOME_DNS"
+  else
+    desired=""
+  fi
+
+  current="$(current_dns "$svc")"
+
+  if [[ "$MODE" == "status" ]]; then
+    printf '  設定ファイル : %s\n' "$CONF"
+    printf '  自宅 SSID    : %s\n' "${HOME_SSID:-(未設定)}"
+    printf '  自宅 DNS     : %s\n' "${HOME_DNS:-(未設定)}"
+    printf '  インターフェース: %s (サービス名: %s)\n' "$dev" "$svc"
+    printf '  接続中の SSID: %s\n' "${ssid:-(未接続)}"
+    printf '  現在の DNS   : %s\n' "${current:-自動取得 (DHCP)}"
+    printf '  あるべき DNS : %s\n' "${desired:-自動取得 (DHCP)}"
+    if [[ "$current" == "$desired" ]]; then
+      printf '  判定         : 一致 (変更不要)\n'
+    else
+      printf '  判定         : 不一致 (次回実行で変更される)\n'
+    fi
+    return 0
+  fi
+
+  # 既に望む状態なら何もしない。これが無限ループ防止の要。
+  if [[ "$current" == "$desired" ]]; then
+    return 0
+  fi
+
+  if [[ "$MODE" == "dry-run" ]]; then
+    say "(dry-run) SSID='${ssid:-未接続}' -> DNS を '${desired:-Empty}' にする"
+    return 0
+  fi
+
+  if [[ "$EUID" -ne 0 ]]; then
+    say "DNS の変更には root が必要です (sudo dns-switch)" >&2
+    return 1
+  fi
+
+  if [[ -n "$desired" ]]; then
+    # shellcheck disable=SC2086
+    /usr/sbin/networksetup -setdnsservers "$svc" $desired \
+      && say "SSID='$ssid' は自宅 -> DNS を $desired に設定しました"
+  else
+    /usr/sbin/networksetup -setdnsservers "$svc" Empty \
+      && say "SSID='${ssid:-未接続}' は自宅ではない -> DNS を自動取得に戻しました"
+  fi
+
+  /usr/bin/dscacheutil -flushcache 2>/dev/null || true
+  /usr/bin/killall -HUP mDNSResponder 2>/dev/null || true
+}
+
+main

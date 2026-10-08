@@ -1,0 +1,2 @@
+# scripts/*.sh が ../lib/common.sh を source しているのを追跡できるようにする
+source-path=SCRIPTDIR

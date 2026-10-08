@@ -1,0 +1,49 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        run: shellcheck -S info bootstrap.sh install.sh lib/common.sh scripts/*.sh bin/dns-switch
+
+      - name: bash の構文チェック
+        run: |
+          for f in bootstrap.sh install.sh lib/common.sh scripts/*.sh bin/dns-switch; do
+            bash -n "$f"
+          done
+
+      - name: zsh の構文チェック
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+          for f in home/.zshenv home/.zprofile home/.zshrc home/.config/zsh/conf.d/*.zsh; do
+            zsh -n "$f"
+          done
+
+      - name: .gitconfig の構文チェック
+        run: git config --file home/.gitconfig --list > /dev/null
+
+      - name: スクリプトに実行権限があるか
+        run: |
+          for f in bootstrap.sh install.sh scripts/*.sh bin/dns-switch; do
+            test -x "$f" || { echo "実行権限がありません: $f"; exit 1; }
+          done
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: launchd plist の検証
+        run: plutil -lint config/dns-switch/*.plist
+
+      - name: Brewfile がパースできるか
+        run: brew bundle list --file=Brewfile --all > /dev/null

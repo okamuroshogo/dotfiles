@@ -1,0 +1,22 @@
+# lefthook — コミット前に構文チェックを走らせる。
+# 有効化: lefthook install  (lefthook は Brewfile に入っている)
+
+pre-commit:
+  parallel: true
+  commands:
+    shellcheck:
+      glob: "*.sh"
+      run: shellcheck -S info {staged_files}
+    shellcheck-bin:
+      glob: "bin/*"
+      run: shellcheck -S info {staged_files}
+    zsh-syntax:
+      glob: "*.zsh"
+      run: |
+        for f in {staged_files}; do zsh -n "$f"; done
+    plist:
+      glob: "*.plist"
+      run: plutil -lint {staged_files}
+    gitconfig:
+      glob: "home/.gitconfig"
+      run: git config --file home/.gitconfig --list > /dev/null
