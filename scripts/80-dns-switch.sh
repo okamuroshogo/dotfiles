@@ -27,10 +27,17 @@ plist_dst="/Library/LaunchDaemons/$label.plist"
 [[ -f "$src_dir/$label.plist" ]]        || die "config/dns-switch/$label.plist がありません"
 
 # 設定が空のままだと「常にDHCPへ戻す」だけの動作になるので気づけるようにする
-( set -a; # shellcheck source=/dev/null
+(
+  HOME_SSIDS=()
+  HOME_SSID=""
+  HOME_DNS=""
+  # shellcheck source=/dev/null
   source "$src_dir/dns-switch.conf" || true
-  [[ -n "${HOME_SSID:-}" && -n "${HOME_DNS:-}" ]] \
-    || warn "dns-switch.conf の HOME_SSID / HOME_DNS が未設定です" ) || true
+  [[ -n "$HOME_SSID" ]] && HOME_SSIDS+=("$HOME_SSID")
+  if (( ${#HOME_SSIDS[@]} == 0 )) || [[ -z "$HOME_DNS" ]]; then
+    warn "dns-switch.conf の HOME_SSIDS / HOME_DNS が未設定です (常に DHCP に戻す動作になります)"
+  fi
+) || true
 
 install_root 755 "$DOTFILES_DIR/bin/dns-switch" /usr/local/sbin/dns-switch
 install_root 644 "$src_dir/dns-switch.conf"     /usr/local/etc/dns-switch.conf

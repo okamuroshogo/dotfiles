@@ -19,11 +19,15 @@
 set -uo pipefail
 
 CONF="${DNS_SWITCH_CONF:-/usr/local/etc/dns-switch.conf}"
-HOME_SSID=""
+HOME_SSIDS=()
+HOME_SSID=""     # 旧形式 (単一指定)。後方互換のために残してある。
 HOME_DNS=""
 
 # shellcheck source=/dev/null
 [[ -r "$CONF" ]] && . "$CONF"
+
+# 単一指定で書かれていても配列に寄せて、以降は配列だけを見る
+[[ -n "$HOME_SSID" ]] && HOME_SSIDS+=("$HOME_SSID")
 
 MODE="apply"
 case "${1:-}" in
@@ -35,6 +39,19 @@ case "${1:-}" in
 esac
 
 say() { printf '%s dns-switch: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
+
+# 自宅の SSID かどうか。
+# 同じ LAN に複数の AP / バンドがあると SSID は1つに決まらないので、
+# 設定側で複数書けるようにして、そのどれかに一致すれば自宅とみなす。
+is_home_ssid() {
+  local ssid="$1" home
+  [[ -n "$ssid" ]] || return 1
+  (( ${#HOME_SSIDS[@]} )) || return 1
+  for home in "${HOME_SSIDS[@]}"; do
+    [[ "$ssid" == "$home" ]] && return 0
+  done
+  return 1
+}
 
 # Wi-Fi のインターフェース名 (en0 など)。機種によって変わるので毎回引く。
 wifi_device() {
@@ -106,7 +123,7 @@ main() {
 
   ssid="$(current_ssid "$dev")"
 
-  if [[ -n "$HOME_SSID" && "$ssid" == "$HOME_SSID" ]]; then
+  if is_home_ssid "$ssid"; then
     desired="$HOME_DNS"
   else
     desired=""
@@ -116,7 +133,15 @@ main() {
 
   if [[ "$MODE" == "status" ]]; then
     printf '  設定ファイル : %s\n' "$CONF"
-    printf '  自宅 SSID    : %s\n' "${HOME_SSID:-(未設定)}"
+    if (( ${#HOME_SSIDS[@]} )); then
+      printf '  自宅 SSID    : %s\n' "${HOME_SSIDS[0]}"
+      local i
+      for (( i = 1; i < ${#HOME_SSIDS[@]}; i++ )); do
+        printf '               : %s\n' "${HOME_SSIDS[i]}"
+      done
+    else
+      printf '  自宅 SSID    : (未設定)\n'
+    fi
     printf '  自宅 DNS     : %s\n' "${HOME_DNS:-(未設定)}"
     printf '  インターフェース: %s (サービス名: %s)\n' "$dev" "$svc"
     printf '  接続中の SSID: %s\n' "${ssid:-(未接続)}"

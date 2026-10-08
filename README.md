@@ -125,11 +125,15 @@ sudo launchctl bootout system/ro.okamu.dns-switch   # 止める
 設定は `config/dns-switch/dns-switch.conf`:
 
 ```sh
-HOME_SSID="NSD1K-9118-a"
+HOME_SSIDS=(
+  "NSD1K-9118-a"
+)
 HOME_DNS="192.168.100.53 192.168.100.54"
 ```
 
 編集したら `./install.sh --only 80` で反映します。
+
+`HOME_SSIDS` は複数書けます。同じ LAN に AP が複数あったり、2.4GHz と 5GHz で SSID 名が違う場合は全部並べてください。1つしか書いていないと、自宅にいるのに別の AP につないでいて切り替わらないことがあります。つないでいる SSID 名は `sudo dns-switch --status` で確認できます。
 
 ### しくみ
 
