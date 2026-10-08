@@ -58,7 +58,9 @@ sudo_begin() {
 }
 
 sudo_end() {
-  [[ -n "$SUDO_KEEPALIVE_PID" ]] && kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+  if [[ -n "$SUDO_KEEPALIVE_PID" ]]; then
+    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+  fi
   SUDO_KEEPALIVE_PID=""
 }
 
