@@ -66,6 +66,7 @@ brew "fd"              # find の代わり
 brew "jq"
 brew "mas"             # App Store のアプリを CLI から
 brew "ripgrep"         # grep の代わり (rg)
+brew "shellcheck"      # シェルスクリプトの静的検査 (このリポジトリの lint に使う)
 brew "tree"
 brew "wget"
 
