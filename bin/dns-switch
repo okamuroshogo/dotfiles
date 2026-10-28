@@ -1,7 +1,12 @@
 #!/bin/bash
 #
-# dns-switch — 接続中の Wi-Fi が自宅の SSID なら DNS を固定し、
-#              それ以外(別のWi-Fi / 未接続)なら自動取得(DHCP)に戻す。
+# dns-switch — 接続中の Wi-Fi が自宅 LAN なら DNS を固定し、
+#              それ以外(別のWi-Fi / テザリング / 未接続)なら自動取得(DHCP)に戻す。
+#
+#              自宅の判定は次をすべて満たしたときだけ:
+#                1. デフォルトゲートウェイの MAC アドレスが HOME_ROUTER_MACS のどれか
+#                2. SSID が読めた場合は HOME_SSIDS のどれか (伏せられていたら見ない)
+#                3. HOME_DNS のどれかが実際に応答する
 #
 # 使い方:
 #   dns-switch              判定して必要なら適用する (launchd から呼ばれる)
@@ -21,6 +26,7 @@ set -uo pipefail
 CONF="${DNS_SWITCH_CONF:-/usr/local/etc/dns-switch.conf}"
 HOME_SSIDS=()
 HOME_SSID=""     # 旧形式 (単一指定)。後方互換のために残してある。
+HOME_ROUTER_MACS=()
 HOME_DNS=""
 
 # shellcheck source=/dev/null
@@ -33,22 +39,80 @@ MODE="apply"
 case "${1:-}" in
   --status)  MODE="status" ;;
   --dry-run) MODE="dry-run" ;;
-  -h|--help) sed -n '3,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n '3,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
   "")        ;;
   *)         echo "不明なオプション: $1" >&2; exit 2 ;;
 esac
 
 say() { printf '%s dns-switch: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
-# 自宅の SSID かどうか。
-# 同じ LAN に複数の AP / バンドがあると SSID は1つに決まらないので、
-# 設定側で複数書けるようにして、そのどれかに一致すれば自宅とみなす。
-is_home_ssid() {
+# SSID が読めたかどうか。
+# macOS 15 以降、位置情報の許可が無いプロセス (この LaunchDaemon も含む) には
+# SSID / BSSID が "<redacted>" と伏せて返される。これは SSID ではないので、
+# 「読めなかった」として扱う。設定に "<redacted>" を書くと全 Wi-Fi が自宅扱いになる。
+ssid_known() {
+  [[ -n "$1" && "$1" != "<redacted>" ]]
+}
+
+# SSID の条件を満たすか。
+# SSID が読めないときや HOME_SSIDS が空のときは判定材料にしない (ゲートウェイ MAC に任せる)。
+# 読めたときは HOME_SSIDS のどれかに一致しなければ自宅ではない。
+ssid_ok() {
   local ssid="$1" home
-  [[ -n "$ssid" ]] || return 1
-  (( ${#HOME_SSIDS[@]} )) || return 1
+  ssid_known "$ssid" || return 0
+  (( ${#HOME_SSIDS[@]} )) || return 0
   for home in "${HOME_SSIDS[@]}"; do
     [[ "$ssid" == "$home" ]] && return 0
+  done
+  return 1
+}
+
+# MAC アドレスを比較できる形 (小文字、各オクテット2桁) にそろえる。
+# arp は f8:aa:3f:5:1:18 のように先頭の 0 を落とすことがあるため。
+normalize_mac() {
+  local IFS=: out="" o
+  for o in $1; do
+    out+="$(printf '%02x' "0x$o" 2>/dev/null):"
+  done
+  printf '%s' "${out%:}"
+}
+
+# インターフェースのデフォルトゲートウェイ (DHCP で配られた router)。
+gateway_ip() {
+  /usr/sbin/ipconfig getoption "$1" router 2>/dev/null
+}
+
+# ゲートウェイの MAC アドレス。ARP に無ければ1回 ping して引き直す。
+gateway_mac() {
+  local dev="$1" gw="$2" mac
+  [[ -n "$gw" ]] || return 0
+  mac="$(/usr/sbin/arp -n -i "$dev" "$gw" 2>/dev/null | awk '{ print $4 }')"
+  if [[ ! "$mac" =~ : ]]; then
+    /sbin/ping -c 1 -t 1 "$gw" >/dev/null 2>&1 || true
+    mac="$(/usr/sbin/arp -n -i "$dev" "$gw" 2>/dev/null | awk '{ print $4 }')"
+  fi
+  [[ "$mac" =~ : ]] && normalize_mac "$mac"
+}
+
+# ゲートウェイが自宅のルータかどうか。HOME_ROUTER_MACS が空なら常に自宅ではない。
+# テザリングや外の Wi-Fi は SSID が伏せられていても、ここで弾かれる。
+router_ok() {
+  local mac="$1" home
+  [[ -n "$mac" ]] || return 1
+  (( ${#HOME_ROUTER_MACS[@]} )) || return 1
+  for home in "${HOME_ROUTER_MACS[@]}"; do
+    [[ "$mac" == "$(normalize_mac "$home")" ]] && return 0
+  done
+  return 1
+}
+
+# 自宅 DNS のどれかが実際に答えるか。
+# MAC が偶然一致した場合や、自宅 DNS が落ちている場合に名前解決できなくなるのを防ぐ。
+# dig は @サーバ に直接問い合わせるので、今のシステム DNS 設定に左右されない。
+dns_ok() {
+  local srv
+  for srv in $HOME_DNS; do
+    /usr/bin/dig +time=1 +tries=1 +short "@$srv" . NS >/dev/null 2>&1 && return 0
   done
   return 1
 }
@@ -107,7 +171,7 @@ current_dns() {
 }
 
 main() {
-  local dev svc ssid desired current
+  local dev svc ssid gw mac reason desired current
 
   dev="$(wifi_device)"
   if [[ -z "$dev" ]]; then
@@ -123,7 +187,23 @@ main() {
 
   ssid="$(current_ssid "$dev")"
 
-  if is_home_ssid "$ssid"; then
+  # 未接続なら他は調べない (ARP や dig で待たされないように)
+  gw="" mac="" reason="未接続"
+  if [[ -n "$ssid" ]]; then
+    gw="$(gateway_ip "$dev")"
+    mac="$(gateway_mac "$dev" "$gw")"
+    if ! router_ok "$mac"; then
+      reason="ゲートウェイ ${gw:-なし} (${mac:-MAC不明}) が自宅のルータではない"
+    elif ! ssid_ok "$ssid"; then
+      reason="SSID '$ssid' が HOME_SSIDS にない"
+    elif ! dns_ok; then
+      reason="自宅 DNS ($HOME_DNS) が応答しない"
+    else
+      reason=""
+    fi
+  fi
+
+  if [[ -z "$reason" && -n "$HOME_DNS" ]]; then
     desired="$HOME_DNS"
   else
     desired=""
@@ -142,9 +222,20 @@ main() {
     else
       printf '  自宅 SSID    : (未設定)\n'
     fi
+    if (( ${#HOME_ROUTER_MACS[@]} )); then
+      printf '  自宅ルータMAC: %s\n' "${HOME_ROUTER_MACS[*]}"
+    else
+      printf '  自宅ルータMAC: (未設定。常に自宅ではないと判定される)\n'
+    fi
     printf '  自宅 DNS     : %s\n' "${HOME_DNS:-(未設定)}"
     printf '  インターフェース: %s (サービス名: %s)\n' "$dev" "$svc"
-    printf '  接続中の SSID: %s\n' "${ssid:-(未接続)}"
+    if [[ "$ssid" == "<redacted>" ]]; then
+      printf '  接続中の SSID: (macOS により伏せられている。判定には使わない)\n'
+    else
+      printf '  接続中の SSID: %s\n' "${ssid:-(未接続)}"
+    fi
+    printf '  ゲートウェイ : %s (%s)\n' "${gw:-なし}" "${mac:-MAC不明}"
+    printf '  自宅判定     : %s\n' "${reason:-自宅}"
     printf '  現在の DNS   : %s\n' "${current:-自動取得 (DHCP)}"
     printf '  あるべき DNS : %s\n' "${desired:-自動取得 (DHCP)}"
     if [[ "$current" == "$desired" ]]; then
@@ -161,7 +252,7 @@ main() {
   fi
 
   if [[ "$MODE" == "dry-run" ]]; then
-    say "(dry-run) SSID='${ssid:-未接続}' -> DNS を '${desired:-Empty}' にする"
+    say "(dry-run) ${reason:-自宅} -> DNS を '${desired:-Empty}' にする"
     return 0
   fi
 
@@ -173,10 +264,10 @@ main() {
   if [[ -n "$desired" ]]; then
     # shellcheck disable=SC2086
     /usr/sbin/networksetup -setdnsservers "$svc" $desired \
-      && say "SSID='$ssid' は自宅 -> DNS を $desired に設定しました"
+      && say "自宅 (ゲートウェイ $gw / $mac) -> DNS を $desired に設定しました"
   else
     /usr/sbin/networksetup -setdnsservers "$svc" Empty \
-      && say "SSID='${ssid:-未接続}' は自宅ではない -> DNS を自動取得に戻しました"
+      && say "自宅ではない ($reason) -> DNS を自動取得に戻しました"
   fi
 
   /usr/bin/dscacheutil -flushcache 2>/dev/null || true

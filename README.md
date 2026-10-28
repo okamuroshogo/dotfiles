@@ -45,7 +45,7 @@ exec $SHELL -l
 | Ruby / Node / Python のバージョン | `config/envs.conf` | `./install.sh --only 50` |
 | シェルの設定 | `home/.config/zsh/conf.d/*.zsh` | リンク済みなので即反映 |
 | Git の設定 | `home/.gitconfig` | 同上 |
-| 自宅の SSID と DNS | `config/dns-switch/dns-switch.conf` | `./install.sh --only 80` |
+| 自宅のルータ MAC / SSID / DNS | `config/dns-switch/dns-switch.conf` | `./install.sh --only 80` |
 | macOS のシステム設定 | `scripts/70-macos-defaults.sh` | `./install.sh --only 70` |
 
 **既存のファイルを黙って消さない。** `~/.zshrc` などに実体ファイルがあった場合は `~/.dotfiles-backup/<日時>/` に退避してからリンクを張ります。
@@ -113,7 +113,7 @@ home/                          ~ にリンクされるファイル (この構造
 
 ## 自宅Wi-Fi検知によるDNS切り替え
 
-自宅の Wi-Fi につないだときだけ DNS を固定し、それ以外の場所では自動取得 (DHCP) に戻します。
+自宅の Wi-Fi につないだときだけ DNS を固定し、それ以外の場所 (外の Wi-Fi、テザリング) では自動取得 (DHCP) に戻します。
 
 ```sh
 sudo dns-switch --status           # 今どう判定されているか
@@ -125,6 +125,9 @@ sudo launchctl bootout system/ro.okamu.dns-switch   # 止める
 設定は `config/dns-switch/dns-switch.conf`:
 
 ```sh
+HOME_ROUTER_MACS=(
+  "f8:aa:3f:35:91:18"
+)
 HOME_SSIDS=(
   "NSD1K-9118-a"
 )
@@ -133,7 +136,15 @@ HOME_DNS="192.168.100.53 192.168.100.54"
 
 編集したら `./install.sh --only 80` で反映します。
 
-`HOME_SSIDS` は複数書けます。同じ LAN に AP が複数あったり、2.4GHz と 5GHz で SSID 名が違う場合は全部並べてください。1つしか書いていないと、自宅にいるのに別の AP につないでいて切り替わらないことがあります。つないでいる SSID 名は `sudo dns-switch --status` で確認できます。
+自宅と判定するのは次の **すべて** を満たしたときだけです:
+
+1. デフォルトゲートウェイの MAC アドレスが `HOME_ROUTER_MACS` のどれか
+2. SSID が読めた場合は `HOME_SSIDS` のどれか (読めなければこの条件は見ない)
+3. `HOME_DNS` のどれかが実際に応答する
+
+SSID だけで判定しないのは、macOS 15 以降、位置情報の許可が無い LaunchDaemon には SSID が `<redacted>` と伏せて返されるためです。以前この `<redacted>` を SSID として登録してしまい、テザリングを含むあらゆる Wi-Fi で自宅 DNS に向いてしまったことがあります。`HOME_SSIDS` に `<redacted>` を書くと `install.sh` が止まります。
+
+AP が複数あってもゲートウェイ (ルータ) は同じなので、MAC は1つで足ります。今の値は `sudo dns-switch --status` の「ゲートウェイ」の行で確認できます。
 
 ### しくみ
 
@@ -149,7 +160,7 @@ HOME_DNS="192.168.100.53 192.168.100.54"
 
 LaunchAgent (ユーザ権限) ではなく **LaunchDaemon (root)** にしてあるのは、`networksetup -setdnsservers` に管理者権限が必要で、ユーザ権限だと毎回パスワードを聞かれてしまうからです。root が実行するファイルなので `/usr/local/sbin/dns-switch` と設定ファイルは `root:wheel` 所有に固定しています。
 
-SSID の取得には `ipconfig getsummary` を使っています。macOS 14 以降、`networksetup -getairportnetwork` は位置情報の許可がないと接続中でも「not associated」としか答えないためです (`networksetup` はフォールバックとして残してあります)。
+SSID の取得には `ipconfig getsummary` を使っています (伏せられることがあるので補助扱い)。macOS 14 以降、`networksetup -getairportnetwork` は位置情報の許可がないと接続中でも「not associated」としか答えないためです (`networksetup` はフォールバックとして残してあります)。
 
 ## メンテナンス
 

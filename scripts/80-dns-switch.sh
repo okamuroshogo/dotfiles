@@ -11,7 +11,7 @@
 # root が実行するファイルなので、所有者を root:wheel に固定して
 # 書き換えによる権限昇格の余地を残さないようにしている。
 #
-# SSID / DNS を変えたいときは config/dns-switch/dns-switch.conf を編集して
+# ルータ MAC / SSID / DNS を変えたいときは config/dns-switch/dns-switch.conf を編集して
 # ./install.sh --only 80 を実行する (リポジトリ側が常に正)。
 
 set -euo pipefail
@@ -30,14 +30,20 @@ plist_dst="/Library/LaunchDaemons/$label.plist"
 (
   HOME_SSIDS=()
   HOME_SSID=""
+  HOME_ROUTER_MACS=()
   HOME_DNS=""
   # shellcheck source=/dev/null
   source "$src_dir/dns-switch.conf" || true
   [[ -n "$HOME_SSID" ]] && HOME_SSIDS+=("$HOME_SSID")
-  if (( ${#HOME_SSIDS[@]} == 0 )) || [[ -z "$HOME_DNS" ]]; then
-    warn "dns-switch.conf の HOME_SSIDS / HOME_DNS が未設定です (常に DHCP に戻す動作になります)"
+  if (( ${#HOME_ROUTER_MACS[@]} == 0 )) || [[ -z "$HOME_DNS" ]]; then
+    warn "dns-switch.conf の HOME_ROUTER_MACS / HOME_DNS が未設定です (常に DHCP に戻す動作になります)"
   fi
-) || true
+  for s in ${HOME_SSIDS[@]+"${HOME_SSIDS[@]}"}; do
+    if [[ "$s" == "<redacted>" ]]; then
+      die "HOME_SSIDS に \"<redacted>\" があります。macOS が SSID を伏せた値なので全 Wi-Fi が一致してしまいます"
+    fi
+  done
+)
 
 install_root 755 "$DOTFILES_DIR/bin/dns-switch" /usr/local/sbin/dns-switch
 install_root 644 "$src_dir/dns-switch.conf"     /usr/local/etc/dns-switch.conf
@@ -46,6 +52,8 @@ install_root 644 "$src_dir/$label.plist"        "$plist_dst"
 log "launchd に登録します"
 # bootout -> bootstrap で、設定が変わっていても確実に読み直させる
 run sudo launchctl bootout "system/$label" 2>/dev/null || true
+# launchctl disable で止めてあると bootstrap が "5: Input/output error" で失敗するので、先に戻す
+run sudo launchctl enable "system/$label"
 run sudo launchctl bootstrap system "$plist_dst"
 
 if [[ "$DRY_RUN" != "1" ]]; then
